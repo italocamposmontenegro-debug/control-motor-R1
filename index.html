@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modelo Computacional Simple del Control Motor</title>
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --surface: #151515;
+      --surface-2: #1f1f1f;
+      --text: #f5f5f5;
+      --muted: #cfcfcf;
+      --gold: #d4af37;
+      --gold-soft: #f0d980;
+      --border: rgba(212, 175, 55, 0.28);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #090909 0%, #121212 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .hero {
+      padding: 56px 24px 36px;
+      background:
+        radial-gradient(circle at top right, rgba(212,175,55,.18), transparent 22%),
+        linear-gradient(135deg, rgba(212,175,55,.08), transparent 35%),
+        #111;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .wrap { max-width: 1200px; margin: 0 auto; }
+
+    .eyebrow {
+      display: inline-block;
+      color: var(--gold-soft);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .8rem;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1.05;
+      margin: 0 0 16px;
+      max-width: 900px;
+    }
+
+    .lead {
+      max-width: 860px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+      background: rgba(10,10,10,.82);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav .nav-inner {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 12px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      white-space: nowrap;
+      font-size: .95rem;
+      background: rgba(255,255,255,.02);
+    }
+
+    nav a:hover, nav a.active {
+      background: rgba(212,175,55,.12);
+      color: var(--gold-soft);
+    }
+
+    main { padding: 28px 24px 80px; }
+
+    section { margin-top: 32px; }
+
+    .section-title {
+      font-size: 1.6rem;
+      margin: 0 0 18px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    .card {
+      background: linear-gradient(180deg, var(--surface), var(--surface-2));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1.12rem;
+      color: var(--gold-soft);
+    }
+
+    .card p, .card li { color: var(--muted); }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(212,175,55,.12);
+      border: 1px solid var(--border);
+      color: var(--gold-soft);
+      font-size: .82rem;
+      margin-bottom: 12px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .flow-step {
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      position: relative;
+      min-height: 140px;
+    }
+
+    .flow-step strong {
+      display: block;
+      color: var(--gold-soft);
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .flow-step small { color: var(--muted); }
+
+    .arrow {
+      text-align: center;
+      color: var(--gold);
+      font-size: 1.7rem;
+      align-self: center;
+      display: none;
+    }
+
+    @media (min-width: 1100px) {
+      .flow-extended {
+        grid-template-columns: 1fr 60px 1fr 60px 1fr 60px 1fr 60px 1fr;
+      }
+      .arrow { display: block; }
+    }
+
+    .formula {
+      background: #0d0d0d;
+      border-left: 4px solid var(--gold);
+      padding: 16px 18px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: #111;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(212,175,55,.12);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(212,175,55,.08);
+      color: var(--gold-soft);
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .interactive {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .interactive { grid-template-columns: 1fr; }
+    }
+
+    .control-group { margin-bottom: 16px; }
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: .95rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--gold); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,.02);
+    }
+
+    .metric .name {
+      font-size: .85rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .metric .value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--gold-soft);
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--gold), #fff2b3);
+      transition: width .25s ease;
+    }
+
+    .callout {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(212,175,55,.06);
+    }
+
+    footer {
+      padding: 28px 24px 50px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: #0c0c0c;
+    }
+
+    .small { font-size: .92rem; color: var(--muted); }
+    .note { color: var(--gold-soft); font-weight: 600; }
+    ul.clean { margin: 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Recurso docente interactivo</div>
+      <h1>Modelo computacional simple del control motor</h1>
+      <p class="lead">
+        Recurso conceptual e interactivo para docencia en neurorehabilitación. Integra control cognitivo,
+        automatización, emoción, estado corporal y retroalimentación sensorial en un modelo simple, enseñable y escalable.
+      </p>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="#arquitectura">Arquitectura</a>
+      <a href="#flujo">Flujo</a>
+      <a href="#variables">Variables</a>
+      <a href="#reglas">Reglas</a>
+      <a href="#simulador">Simulador</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section id="arquitectura">
+      <h2 class="section-title">1. Arquitectura funcional del modelo</h2>
+      <div class="grid grid-3">
+        <article class="card">
+          <div class="pill">Entrada</div>
+          <h3>Inputs del sistema</h3>
+          <p>Entorno, objetivo motor, calidad sensorial, fatiga, dolor, estrés, atención disponible y aprendizaje previo.</p>
+        </article>
+        <article class="card">
+          <div class="pill">Procesamiento</div>
+          <h3>Módulos centrales</h3>
+          <p>Corteza, ganglios basales, cerebelo, sistema límbico, tronco encefálico y médula espinal operan como red integrada.</p>
+        </article>
+        <article class="card">
+          <div class="pill">Salida</div>
+          <h3>Conducta observable</h3>
+          <p>La red genera estabilidad, latencia de respuesta, variabilidad, eficiencia motora y riesgo motor.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>Dominios del control</h3>
+          <table>
+            <thead>
+              <tr><th>Dominio</th><th>Función</th><th>Ejemplo</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Cognitivo</td><td>Planificación, atención, decisión consciente</td><td>Aprender una tarea nueva</td></tr>
+              <tr><td>Automático</td><td>Control rápido, eficiente y postural</td><td>Caminar sin pensar</td></tr>
+              <tr><td>Emocional</td><td>Modulación por amenaza, miedo, motivación</td><td>Rigidez o torpeza bajo presión</td></tr>
+            </tbody>
+          </table>
+        </article>
+        <article class="card">
+          <h3>Idea central</h3>
+          <p>El movimiento no es producido por una sola estructura. Es el resultado de una <span class="note">interacción dinámica entre intención, automatización, emoción, estado corporal y retroalimentación</span>.</p>
+          <div class="callout small">
+            Regla pedagógica útil: cuando baja la automatización o la excitabilidad espinal, el sistema depende más de control cortical. Eso aumenta el costo cognitivo, la variabilidad y el riesgo de error.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="flujo">
+      <h2 class="section-title">2. Flujo lógico del sistema</h2>
+      <div class="flow flow-extended">
+        <div class="flow-step"><strong>Entorno + estado interno</strong><small>Demanda de tarea, contexto, fatiga, dolor, estrés.</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-step"><strong>Input sensorial</strong><small>Visual, somatosensorial y vestibular.</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-step"><strong>Integración central</strong><small>Corteza, ganglios basales, cerebelo y sistema límbico.</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-step"><strong>Salida automática</strong><small>Tronco encefálico y médula espinal organizan ejecución.</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-step"><strong>Conducta observable</strong><small>Estabilidad, variabilidad, latencia, eficiencia y riesgo.</small></div>
+      </div>
+    </section>
+
+    <section id="variables">
+      <h2 class="section-title">3. Variables del modelo</h2>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>Entradas</h3>
+          <table>
+            <thead>
+              <tr><th>Variable</th><th>Significancia</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Fatiga</td><td>Reduce automatización y excitabilidad espinal.</td></tr>
+              <tr><td>Dolor</td><td>Interfiere con reclutamiento, precisión y confianza motora.</td></tr>
+              <tr><td>Estrés</td><td>Aumenta carga emocional e inestabilidad organizativa.</td></tr>
+              <tr><td>Atención disponible</td><td>Determina cuánto control consciente puede sostenerse.</td></tr>
+              <tr><td>Aprendizaje previo</td><td>Favorece automatización y eficiencia.</td></tr>
+              <tr><td>Calidad sensorial</td><td>Define cuánta información fiable recibe el sistema.</td></tr>
+              <tr><td>Demanda de tarea</td><td>Exige mayor ajuste si la tarea es compleja.</td></tr>
+              <tr><td>Tarea dual</td><td>Compite por recursos cognitivos.</td></tr>
+            </tbody>
+          </table>
+        </article>
+        <article class="card">
+          <h3>Salidas</h3>
+          <table>
+            <thead>
+              <tr><th>Salida</th><th>Interpretación</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Estabilidad</td><td>Capacidad global de mantener control funcional.</td></tr>
+              <tr><td>Latencia de respuesta</td><td>Rapidez para corregir perturbaciones.</td></tr>
+              <tr><td>Variabilidad del movimiento</td><td>Consistencia o dispersión de la respuesta.</td></tr>
+              <tr><td>Eficiencia motora</td><td>Relación entre control logrado y costo del sistema.</td></tr>
+              <tr><td>Riesgo motor</td><td>Probabilidad de error, pérdida de control o lesión.</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section id="reglas">
+      <h2 class="section-title">4. Reglas causales simples</h2>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>Reglas del sistema</h3>
+          <ul class="clean">
+            <li>↑ fatiga → ↓ excitabilidad espinal</li>
+            <li>↑ fatiga → ↓ automatización postural</li>
+            <li>↑ estrés → ↑ carga emocional</li>
+            <li>↓ calidad sensorial → ↑ error y variabilidad</li>
+            <li>↑ aprendizaje previo → ↓ necesidad de control consciente</li>
+            <li>↑ tarea dual → ↓ atención disponible efectiva</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Fórmulas conceptuales</h3>
+          <div class="formula">automatización efectiva =
+(automatización postural + aprendizaje previo + ajuste cerebeloso)
+- (fatiga + dolor + estrés)</div>
+          <div class="formula" style="margin-top:12px;">dependencia cortical =
+demanda de tarea + tarea dual + error predicho + baja automatización</div>
+          <div class="formula" style="margin-top:12px;">riesgo motor =
+(latencia + variabilidad + dependencia cortical) - estabilidad</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="simulador">
+      <h2 class="section-title">5. Simulador docente interactivo</h2>
+      <div class="interactive">
+        <article class="card">
+          <h3>Modifica el estado del sistema</h3>
+          <div class="control-group">
+            <label for="fatiga"><span>Fatiga</span><strong id="fatigaVal">0.20</strong></label>
+            <input id="fatiga" type="range" min="0" max="1" step="0.01" value="0.20" />
+          </div>
+          <div class="control-group">
+            <label for="dolor"><span>Dolor</span><strong id="dolorVal">0.10</strong></label>
+            <input id="dolor" type="range" min="0" max="1" step="0.01" value="0.10" />
+          </div>
+          <div class="control-group">
+            <label for="estres"><span>Estrés</span><strong id="estresVal">0.20</strong></label>
+            <input id="estres" type="range" min="0" max="1" step="0.01" value="0.20" />
+          </div>
+          <div class="control-group">
+            <label for="atencion"><span>Atención disponible</span><strong id="atencionVal">0.80</strong></label>
+            <input id="atencion" type="range" min="0" max="1" step="0.01" value="0.80" />
+          </div>
+          <div class="control-group">
+            <label for="aprendizaje"><span>Aprendizaje previo</span><strong id="aprendizajeVal">0.80</strong></label>
+            <input id="aprendizaje" type="range" min="0" max="1" step="0.01" value="0.80" />
+          </div>
+          <div class="control-group">
+            <label for="visual"><span>Input visual</span><strong id="visualVal">0.90</strong></label>
+            <input id="visual" type="range" min="0" max="1" step="0.01" value="0.90" />
+          </div>
+          <div class="control-group">
+            <label for="somato"><span>Input somatosensorial</span><strong id="somatoVal">0.90</strong></label>
+            <input id="somato" type="range" min="0" max="1" step="0.01" value="0.90" />
+          </div>
+          <div class="control-group">
+            <label for="vestibular"><span>Input vestibular</span><strong id="vestibularVal">0.90</strong></label>
+            <input id="vestibular" type="range" min="0" max="1" step="0.01" value="0.90" />
+          </div>
+          <div class="control-group">
+            <label for="demanda"><span>Demanda de tarea</span><strong id="demandaVal">0.50</strong></label>
+            <input id="demanda" type="range" min="0" max="1" step="0.01" value="0.50" />
+          </div>
+          <div class="control-group">
+            <label for="dual"><span>Tarea dual</span><strong id="dualVal">0.10</strong></label>
+            <input id="dual" type="range" min="0" max="1" step="0.01" value="0.10" />
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Resultados del modelo</h3>
+          <div class="metrics">
+            <div class="metric">
+              <div class="name">Excitabilidad espinal</div>
+              <div class="value" id="excitabilidadOut">0.00</div>
+              <div class="bar"><span id="excitabilidadBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Automatización postural</div>
+              <div class="value" id="autoOut">0.00</div>
+              <div class="bar"><span id="autoBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Dependencia cortical</div>
+              <div class="value" id="depOut">0.00</div>
+              <div class="bar"><span id="depBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Variabilidad</div>
+              <div class="value" id="varOut">0.00</div>
+              <div class="bar"><span id="varBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Estabilidad</div>
+              <div class="value" id="estOut">0.00</div>
+              <div class="bar"><span id="estBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Latencia de respuesta</div>
+              <div class="value" id="latOut">0.00</div>
+              <div class="bar"><span id="latBar"></span></div>
+            </div>
+            <div class="metric">
+              <div class="name">Riesgo motor</div>
+              <div class="value" id="riskOut">0.00</div>
+              <div class="bar"><span id="riskBar"></span></div>
+            </div>
+          </div>
+
+          <div class="callout" style="margin-top:18px;">
+            <strong>Interpretación docente</strong>
+            <p id="interpretacion" class="small" style="margin:8px 0 0;">Cargando interpretación...</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap small">
+      Realizado por Italo Campos Montenegro, Mg Neurorrehabilitación, Laboratorio de Rehabilitación Clínica Aumentada.
+    </div>
+  </footer>
+
+  <script>
+    const ids = ["fatiga","dolor","estres","atencion","aprendizaje","visual","somato","vestibular","demanda","dual"];
+
+    function getVal(id) {
+      return parseFloat(document.getElementById(id).value);
+    }
+
+    function setLabel(id) {
+      document.getElementById(id + 'Val').textContent = getVal(id).toFixed(2);
+    }
+
+    function clamp(n) {
+      return Math.max(0, Math.min(1, n));
+    }
+
+    function compute() {
+      ids.forEach(setLabel);
+
+      const fatiga = getVal('fatiga');
+      const dolor = getVal('dolor');
+      const estres = getVal('estres');
+      const atencion = getVal('atencion');
+      const aprendizaje = getVal('aprendizaje');
+      const visual = getVal('visual');
+      const somato = getVal('somato');
+      const vestibular = getVal('vestibular');
+      const demanda = getVal('demanda');
+      const dual = getVal('dual');
+
+      const inputSensorial = (visual + somato + vestibular) / 3;
+      const excitabilidad = clamp(1 - fatiga - dolor * 0.3);
+      const automatizacion = clamp(aprendizaje + inputSensorial * 0.4 - fatiga - estres * 0.3);
+      const errorPredicho = clamp(demanda - inputSensorial + fatiga * 0.4);
+      const seleccionPrograma = clamp(1 - estres * 0.3 - fatiga * 0.2 + aprendizaje * 0.3);
+      const dependencia = clamp(demanda + dual + errorPredicho - automatizacion + (1 - atencion));
+      const variabilidad = clamp(fatiga + estres + dual + (1 - inputSensorial));
+      const estabilidad = clamp(inputSensorial + automatizacion + seleccionPrograma - variabilidad);
+      const latencia = clamp(fatiga + dependencia - excitabilidad);
+      const riesgo = clamp(latencia + variabilidad + dependencia - estabilidad);
+
+      const outputs = {
+        excitabilidadOut: excitabilidad,
+        autoOut: automatizacion,
+        depOut: dependencia,
+        varOut: variabilidad,
+        estOut: estabilidad,
+        latOut: latencia,
+        riskOut: riesgo
+      };
+
+      Object.entries(outputs).forEach(([id, value]) => {
+        document.getElementById(id).textContent = value.toFixed(2);
+        const barId = id.replace('Out', 'Bar');
+        document.getElementById(barId).style.width = (value * 100) + '%';
+      });
+
+      let texto = '';
+      if (riesgo >= 0.7) {
+        texto = 'Riesgo motor alto. El sistema depende de control cortical tardío, muestra mayor variabilidad y menor margen de corrección rápida.';
+      } else if (riesgo >= 0.4) {
+        texto = 'Riesgo motor moderado. El sistema aún compensa, pero la fatiga, la carga dual o la calidad sensorial ya están deteriorando la estabilidad.';
+      } else {
+        texto = 'Riesgo motor bajo. Predomina una organización relativamente eficiente, con buena estabilidad y menor necesidad de compensación cortical.';
+      }
+
+      if (automatizacion < 0.35) {
+        texto += ' La automatización postural está reducida.';
+      }
+      if (dependencia > 0.6) {
+        texto += ' Existe alta dependencia cortical.';
+      }
+      if (excitabilidad < 0.4) {
+        texto += ' La excitabilidad espinal está comprometida.';
+      }
+
+      document.getElementById('interpretacion').textContent = texto;
+    }
+
+    ids.forEach(id => document.getElementById(id).addEventListener('input', compute));
+    compute();
+
+    const links = [...document.querySelectorAll('nav a')];
+    window.addEventListener('scroll', () => {
+      const fromTop = window.scrollY + 120;
+      links.forEach(link => {
+        const section = document.querySelector(link.getAttribute('href'));
+        if (!section) return;
+        if (section.offsetTop <= fromTop && section.offsetTop + section.offsetHeight > fromTop) {
+          links.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
